@@ -6,13 +6,13 @@ from nltk.corpus import stopwords
 import pickle 
 
 # import the data we have generated from "aggregated data by month" which is named as "months.pkl" file
-#  months is a list of nonthly data tables which we are going to do further processing
+#  months is a list of monthly data tables which we are going to do further processing
 
 months_pkl = open('months.pkl', 'rb')
 months = pickle.load(months_pkl)
 
 
-# this fuction creates a list of comments which excepet the inidvidual user we are going to compair.
+# this fuction creates a list of comments which excludes the inidvidual user we are going to compair.
 # then we merge the list into one string and made it into a modified community corpus for each user.
 # each user's commnuity corpus is a single string which is the collection of strings joined with white space
 
