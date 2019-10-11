@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+
+# the package for data processing
+
+import pandas as pd
+import numpy as np
+import nltk
+from nltk.corpus import stopwords
+import re
+
+# import the data from csv file
+df1 = pd.read_csv(r'~\gravityspy_prep2.csv') # set the address to reach the data on your own laptop
+
+# this step is import the stopword list from NLTK 
+english_stopwords = stopwords.words('english')
+
+
+# Check the data structure and read the data
+# in gravity spy the comment is from 2016-02 to 2018-03
+df1.tail(5)
+df.head(5)
+
+
+# read the file mallet.txt and import the words in this file as stopword_list 
+with open(r'C:\Users\wangtao\Documents\summer_intern_gravity spy\original data\mallet.txt','r')as f:
+    stopword_list = f.read().split('\n')
+    # add in the NLTK stopwords 
+    stopword_list.extend(english_stopwords)
+
+ 
+## As we checked the data above, the number of users who commended from 2016-03 to 2018-02 is 1448 
+## the next analysing is depend on the users from gravityspy_prep2 
+## split part of the table from gravityspy_prep2 and create a new table which contains use_id, time and comments
+df3 = df1[['comment_user_login','comment_user_id','comment_created_at','filtered_words']].copy()
+
+## filtered words in stopword_list which come from malltet.txt file.
+## Here I have question about it: Whether this stopword list is a little stric and whether it helps to the comparison
+## some comments may contains only stop words and if they are filtered,the data would be NAN. 
+## Accutally, we can do tfidef to vectorized the words, the words which is more important would have highter score
+## the stopwords which are not important would have lower socre
+df3['filter_comma'] = df3['filtered_words'].apply(lambda x: str(x).replace( "[\\pP+~$`^=|<>～｀＄＾＋＝｜＜＞￥×]" , ""))
+#s.replaceAll( "[\\pP+~$`^=|<>～｀＄＾＋＝｜＜＞￥×]" , "")
+
+df3['split']=df3['filter_comma'].apply(lambda x: nltk.word_tokenize(str(x))) 
+df3['filtered_words2'] = df3['split'].apply(lambda x :' '.join([w for w in x if w not in stopword_list]))
+df3 = df3.drop(['split','filtered_words','filter_comma'],axis=1)
+
+
+## see wether the table cotains null 
+# miss = df3.isnull()
+# for c in miss.columns.values.tolist():
+#     print(c)
+#     print(miss[c].value_counts())
+#     print('\n')
+
+
+## Build the funtion of generating the tables
+list_of_date = ['2016\-03\-','2016\-04\-','2016\-05\-','2016\-06\-','2016\-07\-','2016\-08\-','2016\-09\-','2016\-10\-','2016\-11\-','2016\-12\-','2017\-01\-','2017\-02\-','2017\-03\-',
+                '2017\-04\-','2017\-05\-','2017\-06\-','2017\-07\-','2017\-08\-','2017\-09\-','2017\-10\-','2017\-11\-','2017\-12-','2018\-01\-','2018\-02\-']
+## function to generate table for each months
+## collect each user's comment in every moths in the list
+## using groupby to summarizing each user's comment every month 
+
+def month_collection(df3,list_of_date,list_of_tables = None):
+    list_of_tables = []
+    n = 0
+    for string in list_of_date:
+        month = df3['comment_created_at'].str.contains(string)
+        table = df3[month].copy()
+        table1 = table.groupby(['comment_user_login','comment_user_id'])['filtered_words2'].apply(','.join).reset_index()
+        n +=1
+        table1['month'] = str(n)
+        #table1['filtered_words2'].apply(lambda x:''.join(unique(x)))
+        list_of_tables.append(table1)
+    return list_of_tables
+    
+
+## the data of every month is aggragate forexample the data of month2 is two months' data "2016-03"and "2016-04" 
+
+tables = month_collection(df3,list_of_date)
+
+
+
+## store the data
+import pickle
+with open ('s_hmonth.pkl','wb')as f:
+    pickle.dump(tables,f)
+
